@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+from matching import *
 """
     Visualize interest point detections on an image.
  
@@ -94,7 +94,7 @@ def plot_matches(image0, image1, xs0, ys0, xs1, ys1, matches, scores, th):
           cnt += 1
           p1_match.append([ys0[n], xs0[n], 0])
           p2_match.append([ym[n][0], xm[n][0], 0])
-    print(cnt)
+    #print(cnt)
     return np.array(p1_match), np.array(p2_match)
 
 """
@@ -127,3 +127,15 @@ def show_overlay(image0, image1, tx, ty):
     # draw
     plt.figure()#figsize = [12.8, 9.6]
     plt.imshow(image, cmap='gray')
+
+
+def find_matches(img0, img1):
+  N = 150
+  xs0, ys0, scores0 = find_interest_points(img0, N, 2.5)
+  xs1, ys1, scores1 = find_interest_points(img1, N, 2.5)
+  feats0 = extract_features(img0, xs0, ys0, 2.0)
+  feats1 = extract_features(img1, xs1, ys1, 2.0)
+  matches, match_scores = match_features(feats0, feats1, scores0, scores1)
+  threshold = 1.89 # adjust this for your match scoring system
+  matrix1, matrix2 = plot_matches(img0, img1, xs0, ys0, xs1, ys1, matches, match_scores, threshold)
+  return matrix1, matrix2
