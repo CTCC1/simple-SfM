@@ -33,3 +33,27 @@ def load_image(filename):
    if (image.ndim == 3):
       image = rgb2gray(image)
    return image
+
+"""
+  pts1 and pts2 are world position of interest points. they have dimension of n * 3
+  Remember: change index space points to world position before calling this function
+"""
+def computeFundamentalMatrix(pts1, pts2):
+  n = len(pts1)
+  
+  if len(pts2) != n:
+    raise ValueError("imcompatible number of points")
+
+  M = np.zeros((n,9))
+  for i in range(n):
+    pt1 = pts1[i]
+    pt2 = pts2[i]
+    M[i] = [pt1[j] * pt2[k] for j in range(3) for k in range(3)]
+  U, S, V = np.linalg.svd(M)
+  fundamentalMatrix = V[-1].reshape(3,3)
+  U, S, V = np.linalg.svd(fundamentalMatrix)
+  S[2] = 0
+  fundamentalMatrix = np.dot(U, np.dot(np.diag(S), V))
+
+  return fundamentalMatrix/fundamentalMatrix[2,2] # build homogenous matrix
+
