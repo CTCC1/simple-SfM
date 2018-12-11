@@ -1,7 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matching import *
-"""
+from matching import find_interest_points, extract_features, match_features
+
+def plot_interest_points(image, xs, ys, scores):
+    """
     Visualize interest point detections on an image.
  
     Plot N detected interest points as red circles overlaid on the image.
@@ -14,8 +16,7 @@ from matching import *
        xs          - numpy array of shape (N,) containing x-coordinates
        ys          - numpy array of shape (N,) containing y-coordinates
        scores      - numpy array of shape (N,) containing scores
-""" 
-def plot_interest_points(image, xs, ys, scores):
+    """
     assert image.ndim == 2, 'image should be grayscale'
     # determine color scale
     s_rank = np.argsort(scores)
@@ -27,7 +28,8 @@ def plot_interest_points(image, xs, ys, scores):
     plt.imshow(image, cmap='gray')
     plt.scatter(ys,xs,c=colors)
 
-"""
+def plot_matches(image0, image1, xs0, ys0, xs1, ys1, matches, scores, th):
+    """
     Visualize feature matches.
  
     Draw lines from feature locations in the first image to matching locations
@@ -58,8 +60,7 @@ def plot_interest_points(image, xs, ys, scores):
  
     return two np arrays, same index representing the position vector of matching
     points in their respetive image coordinates
-"""
-def plot_matches(image0, image1, xs0, ys0, xs1, ys1, matches, scores, th):
+    """
     assert image0.ndim == 2, 'image should be grayscale'
     assert image1.ndim == 2, 'image should be grayscale'
     p1_match = []
@@ -97,7 +98,8 @@ def plot_matches(image0, image1, xs0, ys0, xs1, ys1, matches, scores, th):
     #print(cnt)
     return np.array(p1_match), np.array(p2_match)
 
-"""
+def show_overlay(image0, image1, tx, ty):
+    """
     Given two images and an translation t = [tx ty] that aligns them, overlay
     and display them in a common coordinate frame.
  
@@ -108,8 +110,7 @@ def plot_matches(image0, image1, xs0, ys0, xs1, ys1, matches, scores, th):
        image1  - a grayscale image in the form of a 2D numpy (second image)
        tx      - predicted translation in x-direction between images
        ty      - predicted translation in y-direction between images
-"""
-def show_overlay(image0, image1, tx, ty):
+    """
     assert image0.ndim == 2, 'image should be grayscale'
     assert image1.ndim == 2, 'image should be grayscale'
     # combine images
@@ -127,15 +128,3 @@ def show_overlay(image0, image1, tx, ty):
     # draw
     plt.figure()#figsize = [12.8, 9.6]
     plt.imshow(image, cmap='gray')
-
-
-def find_matches(img0, img1):
-  N = 150
-  xs0, ys0, scores0 = find_interest_points(img0, N, 2.5)
-  xs1, ys1, scores1 = find_interest_points(img1, N, 2.5)
-  feats0 = extract_features(img0, xs0, ys0, 2.0)
-  feats1 = extract_features(img1, xs1, ys1, 2.0)
-  matches, match_scores = match_features(feats0, feats1, scores0, scores1)
-  threshold = 1.89 # adjust this for your match scoring system
-  matrix1, matrix2 = plot_matches(img0, img1, xs0, ys0, xs1, ys1, matches, match_scores, threshold)
-  return matrix1, matrix2
