@@ -7,16 +7,42 @@ import matplotlib.pyplot as plt
 import glob
 from mpl_toolkits.mplot3d import Axes3D
 import os
-
+import cv2
 def int_to_str(n):
     ret = str(n)
     return "0" * (3-len(ret)) + ret
 
-N = 2 # dataset size
+def matches(img0, img1):
+  kp0, des0 = sift.detectAndCompute(img0, None)
+  kp1, des1 = sift.detectAndCompute(img1, None)
+  matches = flann.knnMatch(des0,des1,k=2)
+  good = [] 
+  for m,n in matches: 
+    if m.distance < 0.75*n.distance: 
+      good.append(m)
+  h1, w1 = img0.shape[:2] 
+  h2, w2 = img1.shape[:2] 
+  view = scipy.zeros((max(h1, h2), w1 + w2, 3), scipy.uint8) 
+  view[:h1, :w1, 0] = img0
+  view[:h2, w1:, 0] = img1
+  view[:, :, 1] = view[:, :, 0] 
+  view[:, :, 2] = view[:, :, 0] 
+  pts1 = []
+  pts2 = []
+  for m in good: 
+    pts1.append([int(kp0[m.queryIdx].pt[0]), int(kp0[m.queryIdx].pt[1]), 0])
+    pts2.append([int(kp1[m.trainIdx].pt[0] + w1), int(kp1[m.trainIdx].pt[1]), 0]) 
+  return pts1, pts2
+
+sift = cv2.xfeatures2d.SIFT_create()
+index_params = dict(algorithm = 1, trees = 5) 
+search_params = dict(checks=50)  # or pass empty dictionary 
+flann = cv2.FlannBasedMatcher(index_params,search_params)
+N = 10 # dataset size
 DATA_DIR = "./data/house/images" #data size 10
 CAMERA_DIR = "./data/house/3D" 
 IMAGE_DIRS = [os.path.join(DATA_DIR, "house." + int_to_str(n) + ".pgm" )for n in range(N)]
-images = [load_image(img) for img in IMAGE_DIRS]
+images = [cv2.imread(img, 0) for img in IMAGE_DIRS]
 CAMERA_DIRS = [os.path.join(CAMERA_DIR, "house." + int_to_str(n) + ".P") for n in range(N)]
 camera_matrices = [np.loadtxt(cam) for cam in CAMERA_DIRS]
 ItoWs = [np.vstack((m, [[0,0,0,1]])) for m in camera_matrices]
@@ -28,7 +54,7 @@ for i in range(1, N):
     prev = transformation_matrices[i-1]
     img0 = images[i-1]
     img1 = images[i]
-    pts1, pts2 = find_matches(img0, img1)
+    pts1, pts2 = matches(img0, img1)
     n = len(pts1)
     pts1 = [np.matmul(ItoWs[i-1], np.concatenate((pts1[k],[1])))[:3] for k in range(n)]
     pts2 = [np.matmul(ItoWs[i], np.concatenate((pts2[k],[1])))[:3] for k in range(n)]
@@ -79,6 +105,7 @@ for i in range(N):
             res_points.append(point)
 
 print(res_points)
+#res_points = [np.matmul(WtoIs[0], np.concatenate((p, np.array([1]).reshape((1,1)))))[:3] for p in res_points]
 xs = [p[0] for p in res_points]
 ys = [p[1] for p in res_points]
 zs = [p[2] for p in res_points]
