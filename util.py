@@ -56,3 +56,16 @@ def compute_fundamental(pts1, pts2):
     fundamentalMatrix = np.dot(U, np.dot(np.diag(S), V))
 
     return fundamentalMatrix/fundamentalMatrix[2,2] # build homogenous matrix
+
+def compute_P2(F):
+    """
+    Assuming P1 = [I 0], compute the second camera projection matrix from a fundamental matrix. 
+    """ 
+    # compute left epipole
+    _, _, V = np.linalg.svd(F.T)
+    tmp = V[-1]
+    le = tmp / tmp[2]
+
+    # Skew matrix so that a x v = Av for any v.
+    a = np.array([[0, -le[2], le[1]], [le[2], 0, -le[0]], [-le[1], le[0], 0]])
+    return np.vstack((np.dot(a, F.T).T, le)).T
