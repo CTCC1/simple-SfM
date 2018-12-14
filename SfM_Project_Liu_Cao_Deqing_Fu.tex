@@ -106,7 +106,22 @@ The results of our project are the reconstructed 3D points cloud from the set of
 
 
 \section*{Method}
+We firstly consider the scenario where the projection matrix $P= K [R\mid t]$ is given (the dinosaur dataset). 
+Notice that for this kind of problem, $P \in \mathbb{R}^{3 \times 4}$, then we can write it as $P = [A \mid d]$.
+Then we use the following decomposition method: firstly we use the QR algorithm to decompose P to get $A = qr$ where $q$ is orthogonal and $r$ is upper triangular. Then we have $$R = \begin{cases}
+	q^{-1} & \text{ if } \det(q^{-1})  > 0 \\
+	-q^{-1} & \text{ if } \det(q^{-1})  < 0 
+\end{cases}$$
+And we derive the intrinsic matrix as $K = r^{-1}$ and the translation matrix as $t = rb$. 
 
+If the extrinsic matrix is not given. Then we \textbf{[Find it via Fundamental, Essential and Intrinsic]. Please write this. I'm confused.}.  
+
+The methodology flow is \begin{enumerate}[\qquad \quad 1.]
+	\item Find Extrinsic Matrix $[R \mid t]$ for each image.
+	\item For images $i$ and $i+1$, find their matched points $X_1$ and $X_2$, and find their camera centers $\vec{c}_1$ and $\vec{c}_2$. Then for each matched point pair $(\vec{x}_1, \vec{x}_2)$, we compute the direction vectors $\hat{v}_1 = \dfrac{\vec{c}_1 - \vec{x}_1}{||\vec{c}_1 - \vec{x}_1||}$ and $\hat{v}_2 = \dfrac{\vec{c}_2 - \vec{x}_2}{||\vec{c}_2 - \vec{x}_2||}$. Then we have two beams, whose parametrization are $\vec{b_1}(t) = \vec{x}_1 + \hat{v}_1 \cdot t$  and $\vec{b_2} (t) = \vec{x}_2 + \hat{v}_2 \cdot t$. Then we want to find a 3D point $\vec{p}$ whose distance to $\vec{b_1}$ and $\vec{b}_2$ achieves minimum. Then we can use the formula from the book (suppose the vectors are represented as column vectors) : $$\displaystyle \vec{p} = \left(\sum_{i=1}^2 (I - \hat{v}_i \hat{v}_i^T ) \right)^{-1} \cdot \left(\sum_{i=1}^2 (I - \hat{v}_i \hat{v}_i^T ) \vec{c}_i \right)$$
+\end{enumerate}
+
+Thus we derive a set of $\vec{p}$'s, which is the cloud of points of our reconstruction. 
 
 \section*{Experimental Results}
 \section*{Discussion}
