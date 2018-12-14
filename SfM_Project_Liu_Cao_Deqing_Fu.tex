@@ -1,0 +1,114 @@
+\documentclass[10pt]{article}
+\usepackage{color}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+%\usepackage{amsrefs}
+\usepackage{dsfont}
+\usepackage{mathrsfs}
+\usepackage{graphicx}
+\usepackage{stmaryrd}
+\usepackage{enumerate}
+\usepackage[all]{xy}
+\usepackage[mathcal]{eucal}
+\usepackage{listings}
+\usepackage{float}
+\newcommand{\vect}[1]{\boldsymbol{#1}}
+\usepackage{verbatim}  %%includes comment environment
+\usepackage{fullpage}  %%smaller margins
+
+%%Edit Here
+\title{CMSC 25050 Computer Vision Project Report}
+\author{Liu Cao \& Deqing Fu}
+\date{}
+\linespread{1.0}
+\newtheorem{theorem}{Theorem} % PS
+\newtheorem{question}{Question}
+\newtheorem{lemma}[theorem]{Lemma}
+\usepackage{tikz}
+\usepackage{stmaryrd}
+\usetikzlibrary{arrows}
+\makeatletter
+\newenvironment{solution}[1][\solutionname]{\par
+  \pushQED{\qed}%
+  \normalfont \topsep6\p@\@plus6\p@\relax
+  \trivlist
+%<amsbook|amsproc>  \itemindent\normalparindent
+  \item[\hskip\labelsep
+%<amsbook|amsproc>        \scshape
+%<amsart|amsthm>        \itshape
+\itshape 
+    #1\@addpunct{.}]\ignorespaces
+}{%
+  \popQED\endtrivlist\@endpefalse
+}
+%    \end{macrocode}
+%    Default for \cn{proofname}:
+%    \begin{macrocode}
+\providecommand{\solutionname}{Solution}
+
+\makeatletter
+\newcommand*{\indep}{%
+  \mathbin{%
+    \mathpalette{\@indep}{}%
+  }%
+}
+\newcommand*{\nindep}{%
+  \mathbin{%                   % The final symbol is a binary math operator
+    %\mathpalette{\@indep}{\not}% \mathpalette helps for the adaptation
+    \mathpalette{\@indep}{/}%
+                               % of the symbol to the different math styles.
+  }%
+}
+\setlength\parindent{24pt}
+\newcommand*{\@indep}[2]{%
+  % #1: math style
+  % #2: empty or \not
+  \sbox0{$#1\perp\m@th$}%        box 0 contains \perp symbol
+  \sbox2{$#1=$}%                 box 2 for the height of =
+  \sbox4{$#1\vcenter{}$}%        box 4 for the height of the math axis
+  \rlap{\copy0}%                 first \perp
+  \dimen@=\dimexpr\ht2-\ht4-.2pt\relax
+      % The equals symbol is centered around the math axis.
+      % The following equations are used to calculate the
+      % right shift of the second \perp:
+      % [1] ht(equals) - ht(math_axis) = line_width + 0.5 gap
+      % [2] right_shift(second_perp) = line_width + gap
+      % The line width is approximated by the default line width of 0.4pt
+  \kern\dimen@
+  \ifx\\#2\\%
+  \else
+    \hbox to \wd2{\hss$#1#2\m@th$\hss}%
+    \kern-\wd2 %
+  \fi
+  \kern\dimen@
+  \copy0 %                       second \perp
+}
+\usepackage{indentfirst}
+\makeatother
+\newcommand{\argmax}{\operatornamewithlimits{argmax}}
+\newcommand{\argmin}{\operatornamewithlimits{argmin}}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+\usepackage{bbm}
+\usepackage{dsfont}
+%Main
+\begin{document}
+\maketitle
+\section*{Introduction}
+ It's always amazing that living creatures have the ability to measure distance and reconstruct three-dimensional structures though the images they sense from their retina are in fact 2D. Then it brought up the question --- is there a way to reconstruct back the 3D structure from a set of images? Then the topic of "Structure from Motion" (SfM) arises. It has its profound influence in nearly every field, such as geoscience where scientists can utilize SfM to reconstruct and analyze terrains, and such as archaeology where archaeologists can use SfM to reconstruct lost ancient objects with their remaining documents of images. The most interesting is a gigantic project that reconstruct Roma using hundreds of thousands of images. Attracted by these huge applications and research projects, we decided to learn and implement a simple \emph{Structure from Motion} model where we can deal with descent datasets. 
+
+For this project, in terms of the camera, we use the pinhole camera model. There are two different scenarios about real life situations. One is that we only have a set of images and the intrinsic parameters of the camera and the other is that we have the set of images together with its extrinsic parameters. The latter would be easier for computation where the extrinsic parameter matrix can be written as the rotation matrix augmented with the translation matrix: $[R \mid t]$, where $R$ is the rotation matrix while $t$ is the translation matrix. Let $c$ be the camera center, then we have $t = -Rc$. As rotation matrices are orthogonal matrices, then $R^{-1} = R^T$, thus we can compute the camera center from the extrinsic matrix as $c = - R^T \cdot t$. If it's the first scenario where we only have the intrinsic parameters and the images, then we can apply feature matching first and use RANSAC method to find the \emph{fundamental matrix} from the matched points. Then we can derive \emph{essential matrix} from the fundamental matrix and use the essential matrix  and the intrinsic matrix to compute the extrinsic which would return the method of the latter scenario. Once we have the camera centers, we can use triangulation to find the intersection (or say the point whose distance is the minimum to two matched beams) of the beams from their camera locations of the two matched points. Thus, we'll have a set of points in the 3D space, which is the cloud of the structure we want to reconstruct. 
+
+In terms of the data, we uses two sets of data for two different scenarios discussed above. The first one is the dinosaur dataset from \textbf{[CITE HERE]} which provides us the projection matrix $P = K [R\mid t]$, where $K$ is the intrinsic matrix, $R$ the rotation matrix and $t$ the translation matrix. The second data set is 9 headphone images from different directions using an iPhone 8, where we only have the intrinsic information of the camera. 
+
+The results of our project are the reconstructed 3D points cloud from the set of 2D images. \textbf{[Result section in Introduction. I think this is only brief results. ]}
+
+
+\section*{Method}
+
+
+\section*{Experimental Results}
+\section*{Discussion}
+\section*{Reference}
+\end{document} 
