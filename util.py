@@ -69,3 +69,13 @@ def compute_P2(F):
     # Skew matrix so that a x v = Av for any v.
     a = np.array([[0, -le[2], le[1]], [le[2], 0, -le[0]], [-le[1], le[0], 0]])
     return np.vstack((np.dot(a, F.T).T, le)).T
+
+def E_from_F(F, focal_length):
+    '''
+    compute Essential Matrix from Fundamental matrix and camera intrinsic matrix
+    '''
+    K = np.matrix([[focal_length, 0, 0],
+                   [0, focal_length, 0],
+                   [0, 0, focal_length]], dtype=np.float)
+    return K.T * F * K
+'''

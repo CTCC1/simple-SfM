@@ -8,7 +8,6 @@ import glob
 from mpl_toolkits.mplot3d import Axes3D
 import os
 import cv2
-from sklearn import preprocessing
 
 sift = cv2.xfeatures2d.SIFT_create()
 index_params = dict(algorithm = 1, trees = 2) 
@@ -48,8 +47,6 @@ def matches(img0, img1):
     
     return pts1, pts2
 
-
-
 '''
 TESTSET = "house"
 DATA_DIR = "./data/" + TESTSET + "/images" #data size 10
@@ -57,17 +54,35 @@ CAMERA_DIR = "./data/" + TESTSET + "/3D"
 IMAGE_DIRS = [os.path.join(DATA_DIR,  TESTSET + "." + int_to_str(n) + ".pgm" )for n in range(N)]
 images = [cv2.imread(img, 0) for img in IMAGE_DIRS]
 CAMERA_DIRS = [os.path.join(CAMERA_DIR, TESTSET + "." + int_to_str(n) + ".P") for n in range(N)]
-camera_matrices = [np.loadtxt(cam) for cam in CAMERA_DIRS]
-
-
+projection_matrices = [np.loadtxt(cam) for cam in CAMERA_DIRS]
 '''
+
+
 DATA_DIR = "./data/dinosaur/images" #data size 10
 IMAGE_DIRS = [os.path.join(DATA_DIR, "viff." + int_to_str(n) + ".ppm" )for n in range(N)]
 images = [cv2.imread(img, 0) for img in IMAGE_DIRS]
+projection_matrices = sio.loadmat("./data/dinosaur/dino_Ps.mat")["P"][0]
+#print(projection_matrices)
+#exit()
 
-camera_matrices = sio.loadmat("./data/dinosaur/dino_Ps.mat")["P"][0]
-WtoIs = [np.vstack((m, [[0,0,0,1]])) for m in camera_matrices]
-ItoWs = [np.linalg.inv(m) for m in WtoIs]
+camera_matrices = []
+for m in projection_matrices:
+    q, r = np.linalg.qr(np.linalg.inv(m[:3,:3]))
+    invK = r[:3, :3]
+    R = np.linalg.inv(q) # estimated rotation matrix
+    if np.linalg.det(R) < 0:
+        R = -R
+        invK = -invK
+    K = np.linalg.inv(invK) # intrinsic matrix of camera
+    t = invK @ m[:,3].reshape((3,1)) # estimated translation marix
+    camera_matrices.append((K, R, t))
+
+K = camera_matrices[0][0]
+
+#camera_matrices = [np.linalg.qr(m, mode = 'r') for m in projection_matrices]
+#WtoIs = [np.vstack((m, [[0,0,0,1]])) for m in camera_matrices]
+#ItoWs = [np.vstack((np.linalg.qr(m, mode = 'r'), [[0,0,0,1]])) for m in camera_matrices]
+#ItoWs = [np.linalg.inv(m) for m in WtoIs]
 fig = plt.figure()
 ax = Axes3D(fig)
 #x = np.eye(3)
@@ -95,20 +110,24 @@ for i in range(1, N):
     F = cv2.findFundamentalMat(pts2, pts1, cv2.FM_LMEDS)
     F = F[0]
     #transformation_matrices.append(np.matmul(prev, F))
-    P2 = compute_P2(F)
-
-    R1 = normalize_matrix(camera_matrices[i-1][:, :3])
-    t1 = camera_matrices[i-1][:, 3:]
-    R2 = normalize_matrix(camera_matrices[i][:, :3])
-    t2 = camera_matrices[i][:, 3:]
+    #P2 = compute_P2(F)
+    _, R1, t1 = camera_matrices[i-1]
+    _, R2, t2 = camera_matrices[i]
+    #R1 = normalize_matrix(camera_matrices[i-1][:, :3])
+    #t1 = camera_matrices[i-1][:, 3:]
+    #R2 = normalize_matrix(camera_matrices[i][:, :3])
+    #t2 = camera_matrices[i][:, 3:]
+    #print(R1, t1)
+    #print(R2, t2)
+    #exit()
     #print(np.matmul(R1, pts1[0])  + t1.T )
     #exit()
-    #pts1 = np.array([(np.matmul(R1.T, (pt - t1) ))[0] for pt in pts1])
-    #pts2 = np.array([(np.matmul(R2.T, (pt - t2) ))[0] for pt in pts2])
+    pts1 = np.array([(np.matmul(R1.T, (pt + t1) ))[0] for pt in pts1])
+    pts2 = np.array([(np.matmul(R2.T, (pt + t2) ))[0] for pt in pts2])
     #pts1 = np.array([np.matmul(ItoWs[i-1], np.concatenate((pt,[1])))[:3]  for pt in pts1])
     #pts2 = np.array([np.matmul(ItoWs[i], np.concatenate((pt,[1])))[:3]  for pt in pts2])
-    pts1 = np.array([np.matmul(np.vstack((np.concatenate((R1,t1)), [0,0,0,1])) , np.concatenate((pt,[1])))[:3]  for pt in pts1])
-    pts2 = np.array([np.matmul(np.vstack((np.concatenate((R2,t2)), [0,0,0,1])) , np.concatenate((pt,[1])))[:3]  for pt in pts2])
+    #pts1 = np.array([np.matmul(np.vstack((np.concatenate((R1,t1)), [0,0,0,1])) , np.concatenate((pt,[1])))[:3]  for pt in pts1])
+    #pts2 = np.array([np.matmul(np.vstack((np.concatenate((R2,t2)), [0,0,0,1])) , np.concatenate((pt,[1])))[:3]  for pt in pts2])
     '''
     matched_points.append(pts1)
     if i == N-1:
@@ -150,11 +169,16 @@ plt.show()
 camera_centers = []
 #points = [] # in image 0's coordinate
 for i in range(N):
+    '''
     m = camera_matrices[i]
     R = normalize_matrix(m[:, :3])
     t = m[:,3:]
+    '''
+    _, R, t = camera_matrices[i]
+    #print(np.matmul(m[:, :3], m[:, :3].T))
     #cc = -np.matmul(np.linalg.inv(R), t).T[0] # camera center
-    cc = np.matmul(R.T, t).T[0]
+    cc = -np.matmul(R.T, t).T[0]
+    #print(cc.reshape((1,3)))
     #ax.scatter([cc[0]], [cc[1]], [cc[2]], zdir='z', s=100, c = "black")
     #cc = np.matmul(np.vstack((m, [0,0,0,1])), np.concatenate((cc,[1])) )[:3]
     #cc = np.matmul(transformation_matrices[i], c)
@@ -207,11 +231,12 @@ for i in range(N-1):
 print(len(res_points))
 
 # find inlier
-res = []
+res = res_points
+'''
 for x in res_points:
     if abs(x[0]) < 50 and abs(x[1]) < 50 and abs(x[2]) < 50:
         res.append(x)
-
+'''
 #res_points = filter(lambda x: abs(x[0]) < 100 and abs(x[1]) < 100 and abs(x[2]) < 100, res_points)
 #res_points = [np.matmul(WtoIs[0], np.concatenate((p, np.array([1]).reshape((1,1)))))[:3] for p in res_points]
 
