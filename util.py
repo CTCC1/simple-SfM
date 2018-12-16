@@ -78,4 +78,3 @@ def E_from_F(F, focal_length):
                    [0, focal_length, 0],
                    [0, 0, focal_length]], dtype=np.float)
     return K.T * F * K
-'''
